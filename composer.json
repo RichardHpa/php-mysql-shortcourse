@@ -1,0 +1,8 @@
+{
+	"require": {
+		"guzzlehttp/psr7": "^1.3"
+	},
+	"autoload": {
+
+	}
+}
