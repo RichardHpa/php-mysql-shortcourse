@@ -17,4 +17,11 @@ class HomeView extends View{
 		include "pages/master.inc.php";
 	}
 
+	protected function content(){
+		//extract the data from the controller
+		extract($this->data);
+		//Choose which page to load from our pages folder
+		include "pages/home.inc.php";
+	}
+
 }
