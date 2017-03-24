@@ -9,6 +9,14 @@ error_reporting(E_ALL);
 //Autoload does all of the grunt work for loading files, makes it faster
 require 'vendor/autoload.php';
 
+//Need to turn on the session variable
+session_start();
+session_regenerate_id(true);
+
 //Routes tell us which page/function is being loaded and what to load
 require "routes.php";
+
+//Test the connection
+//Uncomment the line bellow when you want to test on another computer
+// require "databasetest.php";
 
