@@ -40,7 +40,13 @@
 					</ul>
 
 					<ul class="nav navbar-nav navbar-right">
-						
+						<?php if(! static::$auth->check()): ?>
+							<li <?php if($page === "login"): ?> class="active" <?php endif ; ?> ><a href=".\?page=login">Login</a></li>
+							<li <?php if($page === "register"): ?> class="active" <?php endif ; ?> ><a href=".\?page=register">Register</a></li>
+						<?php else: ?>
+							<li><?= static::$auth->user()->email; ?></li>
+							<li><a href=".\?page=logout">Logout</a></li>
+						<?php endif; ?>
 					</ul>
 				</div><!-- /.navbar-collapse -->
 			</div><!-- /.container-fluid -->

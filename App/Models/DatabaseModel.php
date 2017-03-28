@@ -5,6 +5,7 @@ namespace App\Models;
 //PHP data objects
 //Gives access to databases
 use PDO;
+use App\Models\Exceptions\ModelNotFoundException;
 
 abstract class DatabaseModel{
 
@@ -110,6 +111,15 @@ abstract class DatabaseModel{
 							$this->error[$column] = "To Long - Must be no more than $value characters long";
 						}
 						break;
+					case 'email':
+						if(! filter_var($this->$column, FILTER_VALIDATE_EMAIL)){
+							$valid = false;
+							$this->errors[$column] = "Must be a valid Email";
+						}
+						break;
+					case 'unique':
+
+						break;
 				}
 			}
 		}
@@ -147,6 +157,10 @@ abstract class DatabaseModel{
 		//Foreach of the columns run this function
 		foreach ($columns as $column) {
 			//Attach the value to each of the columns
+			//Hash the password
+			if($column === 'password'){
+				$this->$column = password_hash($this->$column, PASSWORD_DEFAULT);
+			}
 			$statement->bindValue(":" . $column , $this->$column);
 		}
 
@@ -157,6 +171,7 @@ abstract class DatabaseModel{
 		$this->id = $db->lastInsertID();
 	}
 
+	//FInd 1 individual blog post
 	public function find($id){
 		$db = static::getDatabaseConnection();
 		//Create a select query
@@ -171,8 +186,105 @@ abstract class DatabaseModel{
 		//Put the associated row into a variable
 		$record = $statement->fetch(PDO::FETCH_ASSOC);
 
+		//If there is not a row in the database with that id
+		if(! $record){
+			throw new ModelNotFoundException();
+		}
+
 		//put the record into the data variable
 		$this->data = $record;
+	}
+
+	//Find all of the blog posts
+	public static function all(){
+		//Create array to put all the data into
+		$blogs = [];
+
+		//Connect to the database
+		$db = static::getDatabaseConnection();
+
+		//Write the query
+		$query = "SELECT ".implode("," , static::$columns)." FROM ".static::$tableName;
+
+		//prepare the query
+		$statement = $db->prepare($query);
+		$statement->execute();
+
+		// while the query is running, put each of the rows into the blogs array
+		while($record = $statement->fetch(PDO::FETCH_ASSOC)){
+			$blog = new static();
+			$blog->data = $record;
+			array_push($blogs, $blog);
+		}
+
+		return $blogs;
+	}
+
+	//Count how many entries there are in the database
+	public static function count(){
+		//Connect to the database
+		$db = static::getDatabaseConnection();
+		$query = "SELECT count(id) FROM " . static::$tableName;
+		$statement = $db->prepare($query);
+		$statement->execute();
+		$result = $statement->fetchColumn(); 
+		return $result;
+	}
+
+	//Update the row in the database
+	public function updateDatabase(){
+		$db = static::getDatabaseConnection();
+		//Get all of the columns in the database table
+		$columns = static::$columns;
+		//Because we dont want the ID to change, remove the ID from the database
+		unset($columns[array_search('id', $columns)]);
+		//If we had a timecreated and timeupdated column, we would unset the timecreated column here
+
+		//Write an Update Query
+		$query = "UPDATE " . static::$tableName . " SET ";
+		$updatecols = [];
+		foreach ($columns as $column){
+			array_push($updatecols, $column . "=:" . $column);
+		}
+		$query .= implode(",", $updatecols);
+		$query .= " WHERE id =:id";
+		$statement = $db->prepare($query);
+
+		foreach(static::$columns as $column){
+			//Hash the password
+			if($column === 'password'){
+				$this->$column = password_hash($this->$column, PASSWORD_DEFAULT);
+			}
+			$statement->bindValue(":".$column, $this->$column);
+		}
+		$statement->execute();
+	}
+
+	public static function DatabaseRemove($id){
+		$db = static::getDatabaseConnection();
+		//write the delete query
+		$query = "DELETE FROM " . static::$tableName . " WHERE id = :id";
+		$statement = $db->prepare($query);
+		$statement->bindValue(':id', $id);
+		$statement->execute();
+	}
+
+	public static function findBy($column, $value){
+		$db = static::getDatabaseConnection();
+		$query = "SELECT ".implode(",", static::$columns)." FROM ".static::$tableName." WHERE ".$column." = :value";
+		$statement = $db->prepare($query);
+		$statement->bindValue(':value', $value);
+		$statement->execute();
+
+		$record = $statement->fetch(PDO::FETCH_ASSOC);
+
+		if(! $record){
+			throw new ModelNotFoundException();
+		}
+
+		$obj = new static;
+		$obj->data = $record;
+		return $obj;
 	}
 
 

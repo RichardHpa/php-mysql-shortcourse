@@ -13,10 +13,17 @@ require 'vendor/autoload.php';
 session_start();
 session_regenerate_id(true);
 
+$auth = new App\Services\AuthService();
+
+App\Views\View::registerAuthService($auth);
+App\Controllers\Controller::registerAuthService($auth);
+
 //Routes tell us which page/function is being loaded and what to load
 require "routes.php";
 
 //Test the connection
 //Uncomment the line bellow when you want to test on another computer
 // require "databasetest.php";
+
+var_dump($auth);
 

@@ -5,6 +5,9 @@
 //This will help the PHP know where these classes are so we dont have to write them all in here
 namespace App\Controllers;
 
+//Call the Model not found exception
+use App\Models\Exceptions\ModelNotFoundException;
+
 $page = isset($_GET['page']) ? $_GET['page'] : 'home';
 
 //Try all of the possible outcomes
@@ -31,12 +34,45 @@ try {
 		case 'blog.post':
 			$controller = new BlogController();
 			$controller->SingleBlogPost();
-		break;
+			break;
+		case 'blog.edit':
+			$controller = new BlogController();
+			$controller->edit();
+			break;
+		case 'blog.update':
+			$controller = new BlogController();
+			$controller->update();
+			break;
+		case 'blog.remove':
+			$controller = new BlogController();
+			$controller->remove();
+			break;
+		case 'register':
+			$controller = new AuthenticationController();
+			$controller->register();
+			break;
+		case 'auth.store':
+			$controller = new AuthenticationController();
+			$controller->store();
+			break;
+		case 'login':
+			$controller = new AuthenticationController();
+			$controller->login();
+			break;
+		case 'auth.attempt':
+			$controller = new AuthenticationController();
+			$controller->attempt();
+			break;
+		case 'logout':
+			$controller = new AuthenticationController();
+			$controller->logout();
+			break;
 			
 		default:
-			echo "There isnt any page matching your request";
+			throw new ModelNotFoundException();
 			break;
 	}
-} catch (Exception $e) {
-	echo "There is an error in your routes";
+} catch (ModelNotFoundException $e) {
+	$controller = new ErrorController();
+	$controller->error404();
 }

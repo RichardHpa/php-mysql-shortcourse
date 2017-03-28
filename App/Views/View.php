@@ -8,6 +8,8 @@ abstract class View{
 	//Protected variables or classes, are visible only to the class which they belong to, and any subclasses
 	protected $data;
 
+	protected static $auth;
+
 	//This is saying that they need something to construct the function
 	//ie, you need wood to construct a house
 	public function __construct($data=[]){
@@ -15,4 +17,8 @@ abstract class View{
 	}
 
 	abstract public function render();
+
+	public static function registerAuthService($auth){
+		self::$auth = $auth;
+	}
 }

@@ -11,7 +11,11 @@ use App\Models\Blog;
 class BlogController extends Controller{
 
 	public function show(){
-		$view = new BlogView();
+		$blogs = Blog::all();
+		$blogCount = Blog::count();
+		//Only compact when there is more than 1 variable going into the view
+		//Otherwise use the one in the create function
+		$view = new BlogView(compact('blogs', 'blogCount'));
 		$view->render();
 	}
 
@@ -38,9 +42,9 @@ class BlogController extends Controller{
 
 		//Check to see if image uploaded is ok
 		//If the image is uploaded then go to the saveImage function in the Modal
-		// if($_FILES['image']['error'] === UPLOAD_ERR_OK){
-		// 	$blogPost->saveImage($_FILES['image']['tmp_name']);
-		// }
+		if($_FILES['image']['error'] === UPLOAD_ERR_OK){
+			$blogPost->saveImage($_FILES['image']['tmp_name']);
+		}
 
 		//Run the save function in the database controller
 		$blogPost->save();
@@ -54,19 +58,62 @@ class BlogController extends Controller{
 		$blogPost = new Blog((int)$_GET['id']);
 		$view = new SingleBlogPostView(['blogPost' => $blogPost]);
 		$view->render();
-	} 
+	}
+
+	public function edit(){
+		$blogPost = $this->getFormData($_GET['id']);
+		$view = new BlogCreateView(['blogPost' => $blogPost]);
+		$view->render();
+	}
+
+	public function update(){
+		$blogPost = new Blog((int)$_GET['id']);
+
+		$blogPost->processArray($_POST);
+
+		if(! $blogPost->isValid()){
+			$_SESSION['blog.create'] = $blogPost;
+			header("Location: .\?page=blog.edit&id=".$_GET['id']);
+			exit();
+		}
+
+		if($_FILES['image']['error'] === UPLOAD_ERR_OK){
+			//Remove the old images if a new image is uploaded
+			unlink("./images/originals/$blogPost->image");
+			unlink("./images/thumbnails/$blogPost->image");
+			$blogPost->saveImage($_FILES['image']['tmp_name']);
+		} else if(isset($_POST['removeImage']) && ($_POST['removeImage'] === "true")){
+			//If someone hasn't uploaded a new image but has pressed the remove image button
+			$blogPost->image = null;
+			unlink("./images/originals/$blogPost->image");
+			unlink("./images/thumbnails/$blogPost->image");
+		}
+
+		$blogPost->updateDatabase();
+		header("Location:.\page=blog.post&id=" . $blogPost->id);
+	}
+
+	public function remove(){
+		$blogPost = new Blog((int)$_POST['id']);
+		if(isset($BlogPost->image)){
+			unlink("./images/originals/$blogPost->image");
+			unlink("./images/thumbnails/$blogPost->image");
+		}
+		Blog::DatabaseRemove($_POST['id']);
+		header("Location:./?page=blog");
+	}
 
 
 	public function getFormData($id = null){
 		//If there is a session called blog.create
 		if(isset($_SESSION['blog.create'])){
-			$blogpost = $_SESSION['blog.create'];
+			$blogPost = $_SESSION['blog.create'];
 			//remove session called blog.create
 			unset($_SESSION['blog.create']);
 		} else{
-			$blogpost = new Blog((int)$id);
+			$blogPost = new Blog((int)$id);
 		}
-		return $blogpost;
+		return $blogPost;
 	}
 	
 }
